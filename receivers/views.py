@@ -3,6 +3,7 @@ from django.contrib.auth.hashers import check_password
 from .forms import ReceiverRegistrationForm
 from core.models import Receiver, FoodDonation, PickupSchedule
 import logging
+from django.contrib import messages
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -43,30 +44,46 @@ def receiver_logout(request):
 
 def receiver_dashboard(request):
     if 'receiver_id' not in request.session:
-        logger.debug("No receiver_id in session, redirecting to login")
         return redirect('receivers:receiver_login')
     
     receiver_id = request.session['receiver_id']
-    logger.debug("Fetching data for receiver_id: %s", receiver_id)
     available_donations = FoodDonation.objects.filter(status='available')
     scheduled_pickups = PickupSchedule.objects.filter(receiver_id__receiver_id=receiver_id)
-    logger.debug("Scheduled pickups count: %d, Details: %s", scheduled_pickups.count(), list(scheduled_pickups.values('schedule_id', 'donation_id', 'receiver_id', 'pickup_status')))
     
     if request.method == 'POST':
-        schedule_id = request.POST.get('pickup_id')  # Ensure this matches the form
-        action = request.POST.get('action')
-        if schedule_id and action:
-            pickup = PickupSchedule.objects.get(schedule_id=schedule_id)  # Use schedule_id
-            if action == 'confirm':
-                pickup.pickup_status = 'confirmed'
-            elif action == 'cancel':
-                pickup.pickup_status = 'cancelled'
-                pickup.donation_id.status = 'available'
-            pickup.save()
-            logger.debug("Pickup %s updated to %s", schedule_id, pickup.pickup_status)
-            return redirect('receivers:receiver_dashboard')
+        if 'schedule_pickup' in request.POST:
+            donation_id = request.POST.get('donation_id')
+            if donation_id:
+                donation = FoodDonation.objects.get(donation_id=donation_id)
+                distance = donation.donor_id.calculate_distance(
+                    Receiver.objects.get(receiver_id=receiver_id).location_lat,
+                    Receiver.objects.get(receiver_id=receiver_id).location_long
+                )
+                priority = (1 - 0.5) * (1 / max(distance, 1))
+                PickupSchedule.objects.create(
+                    donation_id=donation,
+                    receiver_id=Receiver.objects.get(receiver_id=receiver_id),
+                    priority_score=priority,
+                    scheduled_time=donation.expiry_time,
+                    pickup_status='pending'
+                )
+                logger.debug("Pickup scheduled for donation %s by receiver %s", donation_id, receiver_id)
+                return redirect('receivers:receiver_dashboard')
     
     return render(request, 'receivers/receiver_dashboard.html', {
         'available_donations': available_donations,
-        'scheduled_pickups': scheduled_pickups
+        'scheduled_pickups': scheduled_pickups,
+        'receiver_id': receiver_id
     })
+
+from django.http import JsonResponse
+from core.models import PickupSchedule
+
+def check_notification(request, receiver_id):
+    pickups = PickupSchedule.objects.filter(receiver_id__receiver_id=receiver_id)
+    for pickup in pickups:
+        if pickup.pickup_status == 'accepted':
+            return JsonResponse({'message': f'Pickup {pickup.schedule_id} successfully allocated.'})
+        elif pickup.pickup_status == 'rejected':
+            return JsonResponse({'message': f'Pickup {pickup.schedule_id} allocated to another receiver.'})
+    return JsonResponse({'message': ''})

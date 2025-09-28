@@ -1,9 +1,12 @@
 from django.shortcuts import render, redirect
 from .forms import DonorRegistrationForm, DonationEntryForm
 from core.models import Donor, FoodDonation, PickupSchedule, Receiver
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password,make_password
 from django.http import HttpResponseRedirect
 import logging
+from django.http import JsonResponse
+from django.contrib import messages
+
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -37,10 +40,11 @@ def donor_registration(request):
     if request.method == 'POST':
         form = DonorRegistrationForm(request.POST)
         if form.is_valid():
-            logger.debug("Form is valid: %s", form.cleaned_data)
-            form.save()
-            logger.debug("Donor saved successfully")
-            return redirect('donors:donor_login')
+            donor = form.save(commit=False)
+            donor.password = make_password(form.cleaned_data['password'])
+            donor.save()
+            logger.debug("Donor registered: %s", donor.donor_id)
+            return redirect('donors:donor_login')  # Use namespace here
     else:
         form = DonorRegistrationForm()
     return render(request, 'donors/donor_registration.html', {'form': form})
@@ -83,36 +87,48 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # ... (other views like donor_registration, donor_login, donor_logout)
-
 def donor_dashboard(request):
     if 'donor_id' not in request.session:
-        logger.debug("No donor_id in session, redirecting to login")
         return redirect('donors:donor_login')
     
     donor_id = request.session['donor_id']
     donations = FoodDonation.objects.filter(donor_id=donor_id)
-    scheduled_pickups = PickupSchedule.objects.filter(donation_id__donor_id=donor_id)
-    logger.debug("Scheduled pickups count: %d, Details: %s", scheduled_pickups.count(), list(scheduled_pickups.values('schedule_id', 'donation_id', 'receiver_id', 'pickup_status')))
+    scheduled_pickups = PickupSchedule.objects.filter(donation_id__donor_id=donor_id, pickup_status='pending')
     
     if request.method == 'POST':
-        schedule_id = request.POST.get('pickup_id')  # Ensure this matches the form
+        schedule_id = request.POST.get('pickup_id')
         action = request.POST.get('action')
         if schedule_id and action:
-            pickup = PickupSchedule.objects.get(schedule_id=schedule_id)  # Use schedule_id
+            pickup = PickupSchedule.objects.get(schedule_id=schedule_id)
             if action == 'accept':
                 pickup.pickup_status = 'accepted'
                 pickup.donation_id.status = 'reserved'
+                pickup.save()
+                logger.debug("Donor accepted pickup %s for receiver %s", schedule_id, pickup.receiver_id.name)
+                # Notify accepting receiver
+                notify_receiver(pickup.receiver_id.receiver_id, schedule_id, 'accepted')
+                # Reject other pending pickups for the same donation
+                other_pickups = PickupSchedule.objects.filter(donation_id=pickup.donation_id, pickup_status='pending').exclude(schedule_id=schedule_id)
+                for other_pickup in other_pickups:
+                    other_pickup.pickup_status = 'rejected'
+                    other_pickup.save()
+                    notify_receiver(other_pickup.receiver_id.receiver_id, schedule_id, 'rejected')
             elif action == 'reject':
                 pickup.pickup_status = 'rejected'
-                pickup.donation_id.status = 'available'
-            pickup.save()
-            logger.debug("Pickup %s updated to %s", schedule_id, pickup.pickup_status)
+                pickup.save()
+                logger.debug("Donor rejected pickup %s", schedule_id)
             return redirect('donors:donor_dashboard')
     
     return render(request, 'donors/donor_dashboard.html', {
         'donations': donations,
-        'scheduled_pickups': scheduled_pickups
+        'scheduled_pickups': scheduled_pickups,
+        'donor_id': donor_id
     })
+
+def notify_receiver(receiver_id, schedule_id, status):
+    # This is a placeholder for real-time notification (e.g., WebSocket or polling)
+    # For now, we'll simulate it with a comment
+    pass  # Implement with JavaScript or WebSocket later
 
 def donation_entry(request):
     if 'donor_id' not in request.session:
@@ -124,33 +140,13 @@ def donation_entry(request):
             donation.donor_id = Donor.objects.get(donor_id=request.session['donor_id'])
             donation.save()
             logger.debug("Donation saved: ID=%s, Donor=%s", donation.donation_id, donation.donor_id.donor_id)
-            receivers = Receiver.objects.all()
-            logger.debug("Found %d receivers", receivers.count())
-            if receivers.exists():
-                for receiver in receivers:
-                    distance = donation.donor_id.calculate_distance(receiver.location_lat, receiver.location_long)
-                    priority = (1 - 0.5) * (1 / max(distance, 1))
-                    pickup = PickupSchedule.objects.create(
-                        donation_id=donation,
-                        receiver_id=receiver,
-                        priority_score=priority,
-                        scheduled_time=donation.expiry_time,
-                        pickup_status='pending'
-                    )
-                    logger.debug("Created pickup: schedule_id=%s, Receiver=%s, Distance=%f", pickup.schedule_id, receiver.name, distance)
-            else:
-                logger.debug("No receivers available to schedule pickup")
             return redirect('donors:donor_dashboard')
     else:
         form = DonationEntryForm()
     return render(request, 'donors/donation_entry.html', {'form': form})
 
-
-
-
-
-
-# ... (other views like donor_registration, donor_login, donor_logout remain the same)
-
-
-
+def check_requests(request, donor_id):
+    pickups = PickupSchedule.objects.filter(donation_id__donor_id=donor_id, pickup_status='pending')
+    if pickups.exists():
+        return JsonResponse({'message': 'New pickup request available.'})
+    return JsonResponse({'message': ''})

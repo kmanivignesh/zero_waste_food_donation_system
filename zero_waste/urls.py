@@ -19,7 +19,7 @@ from django.urls import path,include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('donors/', include('donors.urls')),
-    path('receivers/', include('receivers.urls')),
+    path('donors/', include(('donors.urls', 'donors'), namespace='donors')),  # Include with namespace
+    path('receivers/', include(('receivers.urls', 'receivers'), namespace='receivers')),
     path('admin-panel/', include('administration.urls')),
 ]

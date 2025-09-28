@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html>
-<head><title>Donor Dashboard</title></head>
+<head>
+    <title>Donor Dashboard</title>
+<script>
+    function showNotification(message) {
+        alert(message); // Simple alert for now; replace with a custom popup or WebSocket
+    }
+    // Polling to check for new requests (simplified)
+    setInterval(() => {
+        fetch(`/check_requests/{{ request.session.donor_id }}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) showNotification(data.message);
+            });
+    }, 5000); // Check every 5 seconds
+</script>
+
+</head>
 <body>
     <h1>Donor Dashboard</h1>
     {% if request.session.donor_id %}
@@ -14,7 +30,7 @@
             </li>
         {% endfor %}
         </ul>
-        <h2>Scheduled Pickups</h2>
+        <h2>Pending Pickups</h2>
         <ul>
         {% for pickup in scheduled_pickups %}
             <li>
