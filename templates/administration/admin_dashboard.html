@@ -1,0 +1,8 @@
+<h1>Admin Dashboard</h1>
+<p>Total Donations: {{ total_donations }}</p>
+<h2>Pickup Status Counts</h2>
+<ul>
+{% for status in pickup_status_counts %}
+    <li>{{ status.pickup_status }}: {{ status.count }}</li>
+{% endfor %}
+</ul>

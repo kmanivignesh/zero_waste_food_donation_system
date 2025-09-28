@@ -1,0 +1,7 @@
+<h1>Analytics</h1>
+<h2>Donation Types</h2>
+<ul>
+{% for item in donation_counts %}
+    <li>{{ item.food_type }}: {{ item.count }}</li>
+{% endfor %}
+</ul>
