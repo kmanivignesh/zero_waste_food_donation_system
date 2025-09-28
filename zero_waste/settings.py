@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'donors',
     'receivers',
     'administration',
+    'main',
 ]
 
 MIDDLEWARE = [

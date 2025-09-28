@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <div class="jumbotron text-center animate__animated animate__fadeIn">
+        <h1 class="display-4">Welcome to Zero Waste Initiative</h1>
+        <p class="lead">A Data-Driven Food Donation Platform to reduce food wastage.</p>
+        <a href="{% url 'main:auth' %}" class="btn btn-primary btn-lg mt-3">Get Started</a>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-md-4 mb-4 animate__animated animate__fadeInUp">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h3>Donors</h3>
+                    <p>Donate excess food easily and track your contributions.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4 animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h3>Receivers</h3>
+                    <p>Find and claim donations near you.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4 animate__animated animate__fadeInUp" style="animation-delay: 0.4s">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h3>Admins</h3>
+                    <p>Monitor and analyze the platform's impact.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

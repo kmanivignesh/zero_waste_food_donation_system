@@ -21,3 +21,9 @@ class ReceiverRegistrationForm(forms.ModelForm):
                     if address.strip():
                         ReceiverAddress.objects.create(receiver_id=receiver, address=address.strip())  # Changed 'receiver' to 'receiver_id'
         return receiver
+    
+class ProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Receiver
+        fields = ['name', 'contact', 'location_lat', 'location_long']
+        # Exclude password as it's sensitive and not meant for update via form   

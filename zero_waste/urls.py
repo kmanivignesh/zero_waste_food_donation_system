@@ -15,11 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path,include
+from django.urls import path, include
+
+from django.contrib import admin
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('donors/', include(('donors.urls', 'donors'), namespace='donors')),  # Include with namespace
+    path('donors/', include(('donors.urls', 'donors'), namespace='donors')),
     path('receivers/', include(('receivers.urls', 'receivers'), namespace='receivers')),
-    path('admin-panel/', include('administration.urls')),
+    path('', include(('main.urls', 'main'), namespace='main')),  # Updated from 'zero_waste' to 'main'
 ]

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+    <h1 class="animate__animated animate__fadeIn">Profile</h1>
+    <div class="card shadow-sm animate__animated animate__fadeInUp">
+        <div class="card-body">
+            <p><strong>Name:</strong> {{ user.name }}</p>
+            <p><strong>Contact:</strong> {{ user.contact }}</p>
+            <p><strong>Location:</strong> Lat {{ user.location_lat }}, Long {{ user.location_long }}</p>
+            <h2 class="mt-4">Addresses</h2>
+            <ul class="list-group">
+                {% for address in addresses %}
+                    <li class="list-group-item animate__animated animate__fadeIn">{{ address.address }}</li>
+                {% endfor %}
+            </ul>
+            <h3 class="mt-4">Update Profile</h3>
+            <form method="post" class="mt-3">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary animate__animated animate__pulse">Update</button>
+            </form>
+            <h3 class="mt-4">Add New Address</h3>
+            <form method="post" action="{% url 'donors:add_address' %}" class="mt-3" id="add-address-form">
+                {% csrf_token %}
+                <textarea name="new_address" class="form-control" placeholder="New Address" rows="3"></textarea>
+                <button type="submit" class="btn btn-success mt-2 animate__animated animate__pulse">Add Address</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
