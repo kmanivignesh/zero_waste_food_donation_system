@@ -7,6 +7,7 @@ from core.models import Donor, DonorAddress
 
 class DonorRegistrationForm(forms.ModelForm):
     addresses = forms.CharField(widget=forms.Textarea, required=False, help_text="Enter addresses (one per line)")
+    password = forms.CharField(widget=forms.PasswordInput)
 
     class Meta:
         model = Donor
@@ -14,20 +15,19 @@ class DonorRegistrationForm(forms.ModelForm):
 
     def save(self, *args, **kwargs):
         donor = super().save(commit=False)
-        donor.password = make_password(self.cleaned_data['password'])  # Hash the password
+        donor.password = make_password(self.cleaned_data['password'])  # hash password
         donor.save()
 
-        # Process addresses
         if self.cleaned_data['addresses']:
             address_list = self.cleaned_data['addresses'].strip().split('\n')
             for address in address_list:
                 if address.strip():
                     DonorAddress.objects.create(
-                        donor_id=donor,  # Use donor_id instead of donor
+                        donor_id=donor,
                         address=address.strip()
                     )
-
         return donor
+
     
 class DonationEntryForm(forms.ModelForm):
     class Meta:
