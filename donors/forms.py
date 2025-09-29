@@ -33,6 +33,11 @@ class DonationEntryForm(forms.ModelForm):
     class Meta:
         model = FoodDonation
         fields = ['food_type', 'quantity', 'unit', 'expiry_time']
+        widgets = {
+            'expiry_time': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'}
+            )
+        }
 
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:

@@ -69,29 +69,35 @@ def receiver_login(request):
 def receiver_dashboard(request):
     if 'receiver_id' not in request.session:
         return redirect('receivers:receiver_login')
-    receiver_id = request.session['receiver_id']
+    receiver = Receiver.objects.get(receiver_id=request.session['receiver_id'])
+
+    # Only available donations
     available_donations = FoodDonation.objects.filter(status='available')
-    scheduled_pickups = PickupSchedule.objects.filter(receiver_id__receiver_id=receiver_id)
+
+    # Receivers own accepted pickups
+    accepted_pickups = PickupSchedule.objects.filter(receiver_id=receiver)
+
     if request.method == 'POST':
-        if 'schedule_pickup' in request.POST:
-            donation_id = request.POST.get('donation_id')
-            if donation_id:
-                donation = FoodDonation.objects.get(donation_id=donation_id)
-                distance = donation.donor_id.calculate_distance(
-                    Receiver.objects.get(receiver_id=receiver_id).location_lat,
-                    Receiver.objects.get(receiver_id=receiver_id).location_long
-                )
-                priority = (1 - 0.5) * (1 / max(distance, 1))
+        donation_id = request.POST.get('donation_id')
+        if donation_id:
+            donation = FoodDonation.objects.get(donation_id=donation_id)
+            # Prevent scheduling already reserved donations
+            if donation.status == 'available':
                 PickupSchedule.objects.create(
                     donation_id=donation,
-                    receiver_id=Receiver.objects.get(receiver_id=receiver_id),
-                    priority_score=priority,
+                    receiver_id=receiver,
+                    priority_score=0.0,  # Optional: calculate priority
                     scheduled_time=donation.expiry_time,
                     pickup_status='pending'
                 )
-                logger.debug("Pickup scheduled for donation %s by receiver %s", donation_id, receiver_id)
-                return redirect('receivers:dashboard')
-    return render(request, 'dashboard.html', {'user_type': 'receiver', 'available_donations': available_donations, 'scheduled_pickups': scheduled_pickups})
+        return redirect('receivers:dashboard')
+
+    return render(request, 'dashboard.html', {
+        'user_type': 'receiver',
+        'available_donations': available_donations,
+        'accepted_pickups': accepted_pickups
+    })
+
 
 def profile(request):
     if 'receiver_id' not in request.session:
@@ -139,3 +145,4 @@ def schedule_pickup(request, donation_id):
         logger.debug("Pickup scheduled for donation %s by receiver %s", donation_id, receiver.receiver_id)
         return redirect('receivers:dashboard')
     return redirect('receivers:dashboard')
+

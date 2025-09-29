@@ -49,31 +49,46 @@ def donor_login(request):
 def donor_dashboard(request):
     if 'donor_id' not in request.session:
         return redirect('donors:donor_login')
-    donor_id = request.session['donor_id']
-    donations = FoodDonation.objects.filter(donor_id=donor_id)
-    scheduled_pickups = PickupSchedule.objects.filter(donation_id__donor_id=donor_id, pickup_status='pending')
+    donor = Donor.objects.get(donor_id=request.session['donor_id'])
+
+    donations = FoodDonation.objects.filter(donor_id=donor)
+    pending_pickups = PickupSchedule.objects.filter(donation_id__donor_id=donor, pickup_status='pending')
+
     if request.method == 'POST':
-        schedule_id = request.POST.get('pickup_id')
+        schedule_id = request.POST.get('schedule_id')
         action = request.POST.get('action')
-        if schedule_id and action:
+        if schedule_id:
             pickup = PickupSchedule.objects.get(schedule_id=schedule_id)
             if action == 'accept':
+                # Accept this receiver
                 pickup.pickup_status = 'accepted'
-                pickup.donation_id.status = 'reserved'
                 pickup.save()
-                logger.debug("Donor accepted pickup %s for receiver %s", schedule_id, pickup.receiver_id.name)
-                notify_receiver(pickup.receiver_id.receiver_id, schedule_id, 'accepted')
-                other_pickups = PickupSchedule.objects.filter(donation_id=pickup.donation_id, pickup_status='pending').exclude(schedule_id=schedule_id)
-                for other_pickup in other_pickups:
-                    other_pickup.pickup_status = 'rejected'
-                    other_pickup.save()
-                    notify_receiver(other_pickup.receiver_id.receiver_id, schedule_id, 'rejected')
+
+                # Mark donation as reserved and store receiver
+                donation = pickup.donation_id
+                donation.status = 'reserved'
+                donation.assigned_receiver = pickup.receiver_id
+                donation.save()
+
+                # Reject other pending pickups for this donation
+                other_pickups = PickupSchedule.objects.filter(
+                    donation_id=donation, pickup_status='pending'
+                ).exclude(schedule_id=schedule_id)
+                for op in other_pickups:
+                    op.pickup_status = 'rejected'
+                    op.save()
+                    # Here you can send notification to receivers (WebSocket/Email)
+                
             elif action == 'reject':
                 pickup.pickup_status = 'rejected'
                 pickup.save()
-                logger.debug("Donor rejected pickup %s", schedule_id)
-            return redirect('donors:dashboard')
-    return render(request, 'dashboard.html', {'user_type': 'donor', 'donations': donations, 'scheduled_pickups': scheduled_pickups})
+        return redirect('donors:dashboard')
+
+    return render(request, 'dashboard.html', {
+        'user_type': 'donor',
+        'donations': donations,
+        'pending_pickups': pending_pickups
+    })
 
 def donation_entry(request):
     if 'donor_id' not in request.session:

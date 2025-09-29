@@ -65,12 +65,15 @@ class ReceiverAddress(models.Model):
 
 class FoodDonation(models.Model):
     donation_id = models.AutoField(primary_key=True)
-    donor_id = models.ForeignKey(Donor, on_delete=models.CASCADE)  # 1:M with Donors
+    donor_id = models.ForeignKey(Donor, on_delete=models.CASCADE)
     food_type = models.CharField(max_length=50)
     quantity = models.IntegerField()
     unit = models.CharField(max_length=20, default='kg')
     expiry_time = models.DateTimeField()
     status = models.CharField(max_length=20, default='available')
+    assigned_receiver = models.ForeignKey(
+        'Receiver', on_delete=models.SET_NULL, null=True, blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
 class PickupSchedule(models.Model):
@@ -81,8 +84,6 @@ class PickupSchedule(models.Model):
     scheduled_time = models.DateTimeField()
     pickup_status = models.CharField(max_length=20, default='pending')
 
-    class Meta:
-        unique_together = ('donation_id', 'receiver_id')  # Composite key for M:N between FoodDonations and Receivers
 
     def calculate_priority(self, current_time):
         from datetime import timedelta
