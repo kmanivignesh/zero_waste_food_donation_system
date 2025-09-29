@@ -24,5 +24,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('donors/', include(('donors.urls', 'donors'), namespace='donors')),
     path('receivers/', include(('receivers.urls', 'receivers'), namespace='receivers')),
+    path('admin_panel/', include('administration.urls')),
     path('', include(('main.urls', 'main'), namespace='main')),  # Updated from 'zero_waste' to 'main'
 ]

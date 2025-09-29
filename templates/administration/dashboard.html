@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .card {
+            border-radius: 10px;
+        }
+        .top-list {
+            list-style: none;
+            padding-left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2 class="mb-4 text-center">Admin Dashboard</h2>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card p-3 text-center bg-light">
+                    <h5>Donors</h5>
+                    <p>{{ donors_count }}</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-center bg-light">
+                    <h5>Receivers</h5>
+                    <p>{{ receivers_count }}</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-center bg-light">
+                    <h5>Donations</h5>
+                    <p>{{ donations_count }}</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-center bg-light">
+                    <h5>Pickups</h5>
+                    <p>{{ pickups_count }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Top Donors</h5>
+                <ul class="top-list">
+                    {% for donor in top_donors %}
+                        <li>{{ donor.name }} - {{ donor.num_donations }} donations</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h5>Top Receivers</h5>
+                <ul class="top-list">
+                    {% for receiver in top_receivers %}
+                        <li>{{ receiver.name }} - {{ receiver.num_received }} received</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
