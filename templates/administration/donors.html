@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Donors List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Donors</h2>
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary btn-sm">Back</a>
+    <table class="table table-bordered table-hover mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th><th>Name</th><th>Contact</th><th>Latitude</th><th>Longitude</th><th>Created at</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for donor in donors %}
+            <tr>
+                <td>{{ donor.donor_id }}</td>
+                <td>{{ donor.name }}</td>
+                <td>{{ donor.contact }}</td>
+                <td>{{ donor.location_lat }}</td>
+                <td>{{ donor.location_long }}</td>
+                <td>{{ donor.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center">No donors found</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

@@ -52,3 +52,50 @@ def admin_dashboard(request):
 
     return render(request, 'administration/dashboard.html', context)
 
+
+def admin_logout(request):
+    request.session.flush()
+    return redirect("admin_login")
+
+def admin_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if "admin_id" not in request.session:
+            return redirect("admin_login")
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+
+# --- Donors ---
+@admin_required
+def donors_list(request):
+    donors = Donor.objects.all()
+    return render(request, "administration/donors.html", {"donors": donors})
+
+# --- Receivers ---
+@admin_required
+def receivers_list(request):
+    receivers = Receiver.objects.all()
+    return render(request, "administration/receivers.html", {"receivers": receivers})
+
+# --- Donations ---
+@admin_required
+def donations_list(request):
+    donations = FoodDonation.objects.all()
+    return render(request, "administration/donations.html", {"donations": donations})
+
+# --- Pickups ---
+@admin_required
+def pickups_list(request):
+    pickups = PickupSchedule.objects.all()
+    return render(request, "administration/pickups.html", {"pickups": pickups})
+
+# --- Analytics ---
+@admin_required
+def analytics_view(request):
+    donations_by_type = (
+        FoodDonation.objects.values("food_type").order_by("food_type")
+    )
+    return render(request, "administration/analytics.html", {
+        "donations_by_type": donations_by_type
+    })

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Donors List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Donors</h2>
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary btn-sm">Back</a>
+    <table class="table table-bordered table-hover mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th><th>donation_id</th><th>receiver_id</th><th>priority_score</th><th>scheduled_time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pickup in pickups %}
+            <tr>
+                <td>{{ pickup.schedule_id }}</td>
+                <td>{{ pickup.donation_id }}</td>
+                <td>{{ pickup.receiver_id }}</td>
+                <td>{{ pickup.priority_score }}</td>
+                <td>{{ pickup.scheduled_time }}</td>
+                
+            </tr> 
+            {% empty %}
+            <tr><td colspan="5" class="text-center">No donors found</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
