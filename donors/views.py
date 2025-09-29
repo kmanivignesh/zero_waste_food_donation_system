@@ -88,7 +88,7 @@ def donation_entry(request):
             return redirect('donors:dashboard')
     else:
         form = DonationEntryForm()
-    return render(request, 'donation_entry.html', {'form': form})
+    return render(request, 'donors/donation_entry.html', {'form': form})
 
 def profile(request):
     if 'donor_id' not in request.session:
