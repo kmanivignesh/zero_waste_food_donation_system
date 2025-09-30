@@ -6,7 +6,13 @@ from django import forms
 from core.models import Donor, DonorAddress
 
 class DonorRegistrationForm(forms.ModelForm):
-    addresses = forms.CharField(widget=forms.Textarea, required=False, help_text="Enter addresses (one per line)")
+    # donors/forms.py (and same for receivers)
+    
+    addresses = forms.CharField(
+    widget=forms.Textarea(attrs={'id': 'id_addresses'}),
+    required=False,
+    help_text="Enter addresses (one per line)")
+
     password = forms.CharField(widget=forms.PasswordInput)
 
     class Meta:
