@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password
 from math import radians, sin, cos, sqrt, atan2
+from ML_Model.ml_model import priority_model, food_type_encoder, scaler
+import pandas as pd
 
 class Donor(models.Model):
     donor_id = models.AutoField(primary_key=True)
@@ -75,6 +77,28 @@ class FoodDonation(models.Model):
         'Receiver', on_delete=models.SET_NULL, null=True, blank=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    priority_score = models.FloatField(default=0.0)  # Add this field
+
+    def calculate_priority_ml(self, receiver_capacity, receiver_lat, receiver_long):
+        from django.utils import timezone
+
+    # Prepare feature vector
+        distance = self.donor_id.calculate_distance(receiver_lat, receiver_long)
+        food_type_encoded = food_type_encoder.transform([self.food_type])[0]
+
+        X = pd.DataFrame([{
+        "receiver_capacity": receiver_capacity,
+        "receiver_distance": distance,
+        "food_type_encoded": food_type_encoded,
+        "quantity": self.quantity,
+        "time_to_expiry": (self.expiry_time - timezone.now()).total_seconds() / 3600
+        }])
+
+        self.priority_score = float(priority_model.predict(X)[0])
+        self.save()
+        return self.priority_score
+
+
 
 class PickupSchedule(models.Model):
     schedule_id = models.AutoField(primary_key=True)

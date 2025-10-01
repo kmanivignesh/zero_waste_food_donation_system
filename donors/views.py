@@ -87,7 +87,9 @@ def donor_dashboard(request):
     return render(request, 'dashboard.html', {
         'user_type': 'donor',
         'donations': donations,
-        'pending_pickups': pending_pickups
+        'pending_pickups': pending_pickups,
+        
+        
     })
 
 def donation_entry(request):

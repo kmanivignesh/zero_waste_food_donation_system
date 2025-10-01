@@ -27,3 +27,11 @@ class ProfileUpdateForm(forms.ModelForm):
         model = Receiver
         fields = ['name', 'contact', 'location_lat', 'location_long']
         # Exclude password as it's sensitive and not meant for update via form   
+
+class CapacityUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Receiver
+        fields = ['capacity']
+        widgets = {
+            'capacity': forms.NumberInput(attrs={'min': 0})
+        }

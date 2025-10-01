@@ -1,34 +1,11 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.hashers import check_password
-from .forms import ReceiverRegistrationForm
-from core.models import Receiver, FoodDonation, PickupSchedule
-import logging
 from django.contrib import messages
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.hashers import make_password
-from .forms import ReceiverRegistrationForm, ProfileUpdateForm
+from .forms import ReceiverRegistrationForm, ProfileUpdateForm , CapacityUpdateForm
 from core.models import Receiver, FoodDonation, PickupSchedule, ReceiverAddress
-import logging
 from django.http import JsonResponse
-
-
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
+from ML_Model.ml_model import priority_model, food_type_encoder, scaler
+import pandas as pd
 from django.shortcuts import render, redirect
 from django.contrib.auth.hashers import make_password, check_password
-from .forms import ReceiverRegistrationForm, ProfileUpdateForm
-from core.models import Receiver, FoodDonation, PickupSchedule, ReceiverAddress
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.hashers import make_password, check_password
-from .forms import ReceiverRegistrationForm, ProfileUpdateForm
 from core.models import Receiver, FoodDonation, PickupSchedule, ReceiverAddress
 import logging
 
@@ -69,34 +46,37 @@ def receiver_login(request):
 def receiver_dashboard(request):
     if 'receiver_id' not in request.session:
         return redirect('receivers:receiver_login')
+    
     receiver = Receiver.objects.get(receiver_id=request.session['receiver_id'])
-
-    # Only available donations
     available_donations = FoodDonation.objects.filter(status='available')
 
-    # Receivers own accepted pickups
+    # Update priority for each donation for this receiver
+    for donation in available_donations:
+        donation.calculate_priority_ml(
+            receiver_capacity=receiver.capacity,
+            receiver_lat=receiver.location_lat,
+            receiver_long=receiver.location_long
+        )
+
     accepted_pickups = PickupSchedule.objects.filter(receiver_id=receiver)
 
-    if request.method == 'POST':
-        donation_id = request.POST.get('donation_id')
-        if donation_id:
-            donation = FoodDonation.objects.get(donation_id=donation_id)
-            # Prevent scheduling already reserved donations
-            if donation.status == 'available':
-                PickupSchedule.objects.create(
-                    donation_id=donation,
-                    receiver_id=receiver,
-                    priority_score=0.0,  # Optional: calculate priority
-                    scheduled_time=donation.expiry_time,
-                    pickup_status='pending'
-                )
-        return redirect('receivers:dashboard')
+    # Handle capacity update
+    if request.method == 'POST' and 'update_capacity' in request.POST:
+        form = CapacityUpdateForm(request.POST, instance=receiver)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Capacity updated successfully!")
+            return redirect('receivers:dashboard')
+    else:
+        form = CapacityUpdateForm(instance=receiver)
 
     return render(request, 'dashboard.html', {
         'user_type': 'receiver',
         'available_donations': available_donations,
-        'accepted_pickups': accepted_pickups
+        'accepted_pickups': accepted_pickups,
+        'capacity_form': form  # Pass form to template
     })
+
 
 
 def profile(request):
@@ -133,8 +113,14 @@ def schedule_pickup(request, donation_id):
     if request.method == 'POST':
         receiver = Receiver.objects.get(receiver_id=request.session['receiver_id'])
         donation = FoodDonation.objects.get(donation_id=donation_id)
-        distance = donation.donor_id.calculate_distance(receiver.location_lat, receiver.location_long)
-        priority = (1 - 0.5) * (1 / max(distance, 1))
+
+        # ML-based priority
+        priority = donation.calculate_priority_ml(
+            receiver_capacity=receiver.capacity,
+            receiver_lat=receiver.location_lat,
+            receiver_long=receiver.location_long
+        )
+
         PickupSchedule.objects.create(
             donation_id=donation,
             receiver_id=receiver,
@@ -145,4 +131,3 @@ def schedule_pickup(request, donation_id):
         logger.debug("Pickup scheduled for donation %s by receiver %s", donation_id, receiver.receiver_id)
         return redirect('receivers:dashboard')
     return redirect('receivers:dashboard')
-

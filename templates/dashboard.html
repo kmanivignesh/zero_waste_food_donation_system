@@ -45,6 +45,7 @@
                     <th>Food Type</th>
                     <th>Receiver Name</th>
                     <th>Scheduled Time</th>
+                    <th>Priority Score</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -54,6 +55,9 @@
                         <td>{{ pickup.donation_id.food_type }}</td>
                         <td>{{ pickup.receiver_id.name }}</td>
                         <td>{{ pickup.scheduled_time }}</td>
+                        <td>{{ pickup.priority_score|floatformat:2 }}</td>
+
+
                         <td>
                             <form method="post">
                                 {% csrf_token %}
@@ -69,6 +73,17 @@
     </div>
 
 {% elif user_type == 'receiver' %}
+<hr>
+    <h3>Update Capacity</h3>
+    
+<form method="post">
+    {% csrf_token %}
+    {{ capacity_form.capacity.label_tag }} 
+    {{ capacity_form.capacity }}
+    <button type="submit" name="update_capacity" class="btn btn-primary">Update Capacity</button>
+</form>
+<hr>
+
     <!-- Receiver Available Donations -->
     <h2 class="mt-4">Available Donations</h2>
     <div class="table-responsive animate__animated animate__fadeInUp">
@@ -80,6 +95,8 @@
                     <th>Unit</th>
                     <th>Expiry Time</th>
                     <th>Action</th>
+                    <th>Priority</th>
+
                 </tr>
             </thead>
             <tbody>
@@ -89,6 +106,8 @@
                         <td>{{ donation.quantity }}</td>
                         <td>{{ donation.unit }}</td>
                         <td>{{ donation.expiry_time }}</td>
+                        <td>{{ donation.priority_score|floatformat:2 }}</td>
+
                         <td>
                             <form method="post" action="{% url 'receivers:schedule_pickup' donation.donation_id %}">
                                 {% csrf_token %}
@@ -118,6 +137,7 @@
                         <td>{{ pickup.donation_id.food_type }}</td>
                         <td>{{ pickup.pickup_status }}</td>
                         <td>{{ pickup.scheduled_time }}</td>
+                        <td></td>
                         
                     </tr>
                 {% endfor %}
